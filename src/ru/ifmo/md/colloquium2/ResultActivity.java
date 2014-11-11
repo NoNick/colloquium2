@@ -22,4 +22,9 @@ public class ResultActivity extends Activity {
                 new String[]{CandidatesProvider.NAME, CandidatesProvider.VOTES},
                 new int[]{R.id.text1, R.id.text2}, n));
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+    }
 }
