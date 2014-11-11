@@ -3,26 +3,34 @@ package ru.ifmo.md.colloquium2;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
-import android.view.View;
+import android.view.*;
 import android.widget.*;
 
 public class MainActivity extends Activity {
     class NewCandidateListener implements DialogInterface.OnClickListener {
         EditText name;
+        Context mainContext;
 
-        public NewCandidateListener(EditText name) {
+        public NewCandidateListener(EditText name, Context c) {
             this.name = name;
+            mainContext = c;
         }
 
         @Override
         public void onClick(DialogInterface dialog, int which) {
+            Cursor c = getContentResolver().query(CandidatesProvider.CONTENT_URI, null,
+                               CandidatesProvider.NAME + "=?", new String[]{name.getText().toString()}, null);
+            if (c.getCount() != 0) {
+                    Toast t = Toast.makeText(mainContext, "Candidate with this name exists", Toast.LENGTH_LONG);
+                    t.show();
+                    return;
+            }
+            c.close();
             ContentValues cv = new ContentValues();
             cv.put(CandidatesProvider.NAME, name.getText().toString());
             cv.put(CandidatesProvider.VOTES, 0);
@@ -63,6 +71,19 @@ public class MainActivity extends Activity {
                 }
             }
         });
+        lv.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
+                if (!voteInProgress) {
+                    LinearLayout ll = (LinearLayout) view;
+                    TextView nameView = (TextView) ll.findViewById(R.id.text1);
+                    getContentResolver().delete(CandidatesProvider.CONTENT_URI,
+                            CandidatesProvider.NAME + "=?", new String[]{nameView.getText().toString()});
+                    return true;
+                }
+                return false;
+            }
+        });
     }
 
     @Override
@@ -91,7 +112,7 @@ public class MainActivity extends Activity {
                     ll.addView(nameLabel);
                     ll.addView(nameField);
                     builder.setView(ll);
-                    builder.setPositiveButton("OK", new NewCandidateListener(nameField));
+                    builder.setPositiveButton("OK", new NewCandidateListener(nameField, this));
                     builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
